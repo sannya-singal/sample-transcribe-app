@@ -7,7 +7,7 @@
 | Integrations | Serverless Framework, AWS CLI, Serverless Lift Pluglin, AWS SDK      |
 | Categories   | Serverless, Event-driven architecture, S3 Trigger, LocalStack developer endpoints |
 | Level        | Intermediate                                                         |
-| Github       | [Repository link](https://github.com/sannya-singal/sample-transcribe-app) |                                                 
+| Github       | [Repository link](https://github.com/localstack/sample-transcribe-app)) |                                                 
 
 ## Introduction
 
