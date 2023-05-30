@@ -1,0 +1,91 @@
+service: aws-node-sample-transcribe-s3
+
+frameworkVersion: "3"
+
+plugins:
+  - serverless-localstack
+  - serverless-lift
+
+custom:
+  defaultStage: local
+  profile: default
+  runtime: nodejs14.x
+  localstack:
+    stages: [local]
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  environment:
+    S3_AUDIO_BUCKET: ${self:service}-${opt:stage, self:provider.stage}-records
+    S3_TRANSCRIPTION_BUCKET: ${self:service}-${opt:stage, self:provider.stage}-transcriptions
+    LANGUAGE_CODE: en-US
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:ListBucket
+          Resource: '*'
+        - Effect: Allow
+          Action:
+            - transcribe:StartTranscriptionJob
+          Resource: '*'
+        - Effect: Allow
+          Action:
+            - sqs:SendMessage
+          Resource: '*'
+
+functions:
+  transcribe:
+    handler: src/transcribe.process
+    events:
+      - s3:
+          bucket: ${self:provider.environment.S3_AUDIO_BUCKET}
+          event: s3:ObjectCreated:*
+
+  GetUpload:
+    handler: src/upload.get
+    events:
+      - http:
+          path: upload
+          method: get
+          cors: false
+
+  GetPresign:
+    handler: src/presign.post
+    events:
+      - http:
+          path: presign
+          method: get
+          cors: false
+  
+  ListJobs:
+    handler: src/jobs.list
+    events:
+      - http:
+          path: job
+          method: get
+          cors: false
+  
+  producer:
+    handler: src/queue.producer
+    events:
+      - s3:
+          bucket: ${self:provider.environment.S3_TRANSCRIPTION_BUCKET}
+          event: s3:ObjectCreated:*
+
+constructs:
+  jobs:
+    type: queue
+    worker:
+      handler: src/queue.consumer
+
+resources:
+  Resources:
+    S3TranscriptionBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: ${self:provider.environment.S3_TRANSCRIPTION_BUCKET}
